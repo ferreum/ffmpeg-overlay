@@ -3,10 +3,10 @@ ffmpeg-overlay.py - ffmpeg wrapper for gamecontroller overlays.
 
 ## Dependencies
 
-Needs Python 3, tested with Python 3.5.1
-Needs the cairocffi python module.
-Expects `unpremultiply` to be in the `$PATH`.
-For recording the evnets, use the `jstest` program.
+- Needs Python 3, tested with Python 3.5.1
+- Needs the `cairocffi` python module.
+- Expects `unpremultiply` to be in the `$PATH`.
+- For recording the events, use the `jstest` program.
 
 ### Install cairocffi
 
