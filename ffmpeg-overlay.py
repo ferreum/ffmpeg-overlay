@@ -206,9 +206,8 @@ def parse_args(argv):
     in ffmpeg-compatible time format. If no --start option is given, 0 is used.
     """)
     parser.add_argument('-e', '--events', help="jstest --event output file")
-    ingroup = parser.add_mutually_exclusive_group()
-    ingroup.add_argument('-d', '--delay', default=None,
-                         help="Additional delay for events in seconds (float)")
+    parser.add_argument('-d', '--delay', default=None,
+                        help="Additional delay for events in seconds (float)")
     parser.add_argument('-s', '-ss', '--start', default=None, dest='start',
                         help="Skip given amount of time of events, in seconds. For use with ffmpeg -ss option")
     parser.add_argument('-t', '--type', default='xboxdrv', help="Specify the controller type to use")
