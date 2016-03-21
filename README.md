@@ -1,6 +1,5 @@
-ffmpeg wrapper script for gamecontroller overlays.
-
-===================================================
+ffmpeg-overlay.py - ffmpeg wrapper for gamecontroller overlays.
+===============================================================
 
 ## Dependencies
 
@@ -52,7 +51,7 @@ and the second input to be the overlay.
 ### Controller type, layout and theme
 
 Specify your controller type with the `-t` option. If there is no match for
-your controller, see [Advanced configuration](#Advanced configuration).
+your controller, see [Advanced configuration](#advanced-configuration).
 Use `-l` and `-T` respectively to specify layout and theme.
 
 ### Syncing
@@ -72,8 +71,8 @@ are used relative to the time of the first event.
 
 To start the video (and the overlay) at a different point, use the `-s` option.
 There exists another special value for the ffmpeg commandline to aid with this:
-`{ss}` is replaced with the same value given to `-s` such that the ffmpeg's
-`-ss` option understands it.
+`{ss}` is replaced with the same value given to `-s` such that ffmpeg's `-ss`
+option understands it.
 
     ffmpeg-overlay.py -e events.jse -d 0.3 -s 15.3 -- ffmpeg -ss '{ss}' -i recorded-video.mkv '{overlayin}' -c:v libx264 -crf 23 -y output-video.mkv
 
