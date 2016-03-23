@@ -37,13 +37,13 @@ when the program is killed.
 
 After recording, use the `ffmpeg-overlay.py` script to re-encode the video with overlay:
 
-    ffmpeg-overlay.py -e events.jse -t xboxdrv --pos 1,.8 -- ffmpeg -i recorded-video.mkv '{overlayin}' -c:v libx264 -crf 23 -y output-video.mkv
+    ffmpeg-overlay.py -e events.jse -t xboxdrv --pos 1,.8 -- ffmpeg -i recorded-video.mkv '{overlay}' -c:v libx264 -crf 23 -y output-video.mkv
 
 The basic usage here is
 
     ffmpeg-overlay.py -e <eventsfile> [options] -- <ffmpeg commandline>
 
-The special argument `{overlayin}` is replaced with the options for ffmpeg to
+The special argument `{overlay}` is replaced with the options for ffmpeg to
 receive the generated overlay, including a video filter. This value must follow
 the first input file, because the filter expects the first input to be the main video
 and the second input to be the overlay.
@@ -74,7 +74,7 @@ There exists another special value for the ffmpeg commandline to aid with this:
 `{ss}` is replaced with the same value given to `-s` such that ffmpeg's `-ss`
 option understands it.
 
-    ffmpeg-overlay.py -e events.jse -d 0.3 -s 15.3 -- ffmpeg -ss '{ss}' -i recorded-video.mkv '{overlayin}' -c:v libx264 -crf 23 -y output-video.mkv
+    ffmpeg-overlay.py -e events.jse -d 0.3 -s 15.3 -- ffmpeg -ss '{ss}' -i recorded-video.mkv '{overlay}' -c:v libx264 -crf 23 -y output-video.mkv
 
 This starts the video at 15.3 seconds with events delayed by 0.3 seconds.
 Notice that the `-ss` option needs to be specified before the main video file.

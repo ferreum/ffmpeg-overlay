@@ -123,16 +123,25 @@ class FFMpegWriter(object):
         self._stream = self._proc_filter.stdin
 
     def _args(self):
-        pos = self.position
-        lavfi = 'overlay=(W-w)*{left}:(H-h)*{top}:shortest=1'.format(
-                left=pos[0], top=pos[1])
-        filterargs = ['-lavfi', lavfi]
-        templateargs = self.templateargs
-        index = templateargs.index('{overlayin}')
-        ovargs = ('-f', 'rawvideo', '-vcodec', 'rawvideo',
-                  '-s', '%dx%d' % self.frame_size, '-pix_fmt', self.frame_format,
-                  '-r', str(self.fps), '-i', 'pipe:')
-        return (*templateargs[:index], *ovargs, *filterargs, *templateargs[index+1:])
+        args = []
+        haveinput = False
+        for arg in self.templateargs:
+            if arg in ('{overlay}', '{overlayin}', '{overlayfilter}'):
+                if arg in ('{overlay}', '{overlayin}'):
+                    args += ['-f', 'rawvideo', '-vcodec', 'rawvideo',
+                             '-s', '%dx%d' % self.frame_size, '-pix_fmt',
+                             self.frame_format, '-r', str(self.fps), '-i', 'pipe:']
+                    haveinput = True
+                if arg in ('{overlay}', '{overlayfilter}'):
+                    pos = self.position
+                    args += ['-lavfi',
+                             'overlay=(W-w)*{left}:(H-h)*{top}:shortest=1'.format(
+                             left=pos[0], top=pos[1])]
+            else:
+                args.append(arg)
+        if not haveinput:
+            raise ValueError("no overlay placeholder found")
+        return args
 
     def save_frame(self):
         surface = self.surface
@@ -198,7 +207,7 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(prog=progname, epilog="""
     Use -- to separate the command template from arguments for this script.
 
-    The first occurrence of {overlayin} is replaced with ffmpeg input options
+    The first occurrence of {overlay} is replaced with ffmpeg input options
     for reading the overlay from stdin. This marker must follow the first
     input, which is used as main video.
 
