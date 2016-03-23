@@ -264,7 +264,7 @@ class DpadGroupLook(Look):
         buttons[1].update(context, 1.0 if vy > 0.0 else 0.0)
         buttons[2].update(context, 1.0 if vx < 0.0 else 0.0)
         buttons[3].update(context, 1.0 if vy < 0.0 else 0.0)
-        Look.update(self, context, vx or vy or 0.0)
+        Look.update(self, context, 1.0 if vx or vy else 0.0)
         for b in buttons:
             b.alpha = self.alpha
 
