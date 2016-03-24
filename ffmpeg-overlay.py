@@ -110,27 +110,42 @@ class FFMpegWriter(object):
 
     def _run(self):
         import subprocess
-        command = self._args()
-        self._proc_filter = subprocess.Popen((self.unpremultiply,), shell=False,
-                                             stdin=subprocess.PIPE,
-                                             stdout=subprocess.PIPE,
-                                             stderr=sys.stderr)
-        filterout = self._proc_filter.stdout
-        self._proc_ff = subprocess.Popen(command, shell=False,
-                                         stdout=sys.stdout, stderr=sys.stderr,
-                                         stdin=filterout)
-        filterout.close()
+        try:
+            pass_fds = [int(fd) for fd in os.environ['FFMPEG_OVERLAY_FDS'].split(",")]
+        except KeyError:
+            pass_fds = []
+        pread, pwrite = os.pipe()
+        try:
+            pass_fds.append(pread)
+            ffenv = dict(os.environ)
+            ffenv['FFMPEG_OVERLAY_FDS'] = ','.join(str(fd) for fd in pass_fds)
+            command = self._args(pread)
+            self._proc_filter = subprocess.Popen((self.unpremultiply,), shell=False,
+                                                stdin=subprocess.PIPE,
+                                                stdout=pwrite,
+                                                stderr=sys.stderr)
+            self._proc_ff = subprocess.Popen(command, shell=False,
+                                            pass_fds=pass_fds,
+                                            env=ffenv,
+                                            stdin=sys.stdin,
+                                            stdout=sys.stdout,
+                                            stderr=sys.stderr)
+        finally:
+            os.close(pread)
+            os.close(pwrite)
         self._stream = self._proc_filter.stdin
 
-    def _args(self):
+    def _args(self, pread):
         args = []
         haveinput = False
         for arg in self.templateargs:
-            if arg in ('{overlay}', '{overlayin}', '{overlayfilter}'):
+            if arg.startswith("{{") and arg.endswith("}}"):
+                args.append(arg[1:-1])
+            elif arg in ('{overlay}', '{overlayin}', '{overlayfilter}'):
                 if arg in ('{overlay}', '{overlayin}'):
                     args += ['-f', 'rawvideo', '-vcodec', 'rawvideo',
                              '-s', '%dx%d' % self.frame_size, '-pix_fmt',
-                             self.frame_format, '-r', str(self.fps), '-i', 'pipe:']
+                             self.frame_format, '-r', str(self.fps), '-i', 'pipe:%s' % (pread,)]
                     haveinput = True
                 if arg in ('{overlay}', '{overlayfilter}'):
                     pos = self.position
