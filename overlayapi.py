@@ -86,14 +86,14 @@ class BgFgLook(Look):
         Look.__init__(self, center, **kwargs)
         self.bgsize = bgsize
         self.fgsize = fgsize
-        self.bgalpha = .5
-        self.fgalpha = 1.0
 
     def init_theme(self, theme):
         Look.init_theme(self, theme)
         self.theme = theme
-        self.fgcolor = theme.fgcolor
         self.bgcolor = theme.bgcolor
+        self.fgcolor = theme.fgcolor
+        self.bgalpha = theme.bgalpha
+        self.fgalpha = theme.fgalpha
 
     def maxout(self, value):
         if value >= 0.98:
@@ -363,7 +363,9 @@ class Layout(object):
 
 
 class Theme(object):
-    pass
+
+    bgalpha = .5
+    fgalpha = 1.0
 
 
 class ControllerType(object):
