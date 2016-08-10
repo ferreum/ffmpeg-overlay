@@ -12,8 +12,6 @@ def print_event(ty, type, time, num, value):
 class PrintHandler(js.Handler):
 
     def handle_event(self, event):
-        if event.type & js.TY_INIT_BIT:
-            raise Exception("init event in print handler")
         print(event.text)
 
 
