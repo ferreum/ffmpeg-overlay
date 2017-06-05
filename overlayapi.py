@@ -280,11 +280,14 @@ class SimpleStateAdapter(object):
 
     def __init__(self, spec):
         self.spec = spec
+        self.origin = (spec,)
 
     def __call__(self, allstates):
         return allstates.states[self.spec]
 
 class TimeAdapter(object):
+
+    origin = ()
 
     def __init__(self, duration):
         self.duration = int(duration * 1000)
@@ -296,6 +299,7 @@ class GroupAdapter(object):
 
     def __init__(self, *adapters):
         self.adapters = [to_adapter(a) for a in adapters]
+        self.origin = tuple(a.origin for a in self.adapters)
 
     def __call__(self, context):
         return [a(context) for a in self.adapters]
@@ -304,6 +308,7 @@ class ConvertAdapter(object):
 
     def __init__(self, adapter, a2=None, factor=1, offset=0):
         self.adapter = to_adapter(adapter, a2=a2)
+        self.origin = self.adapter.origin
         self.factor = factor
         self.offset = offset
 
