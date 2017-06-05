@@ -5,6 +5,7 @@ import sys
 import os
 import contextlib
 import overlayapi as api
+from common import ArgvError
 
 
 class Context(object):
@@ -32,13 +33,6 @@ class Context(object):
     def update(self, time):
         self.evs.work_all(self.offset + time)
         self.time = time
-
-
-class ArgvError(Exception):
-
-    def __init__(self, msg, parser):
-        Exception.__init__(self, msg)
-        self.parser = parser
 
 
 class ControlsAnimation(object):
@@ -315,9 +309,5 @@ def main(argv):
         return writer.exit_status
 
 if __name__ == '__main__':
-    try:
-        exit(main(sys.argv))
-    except KeyboardInterrupt:
-        exit(127)
-    except ArgvError as e:
-        e.parser.error(e)
+    from common import run_main
+    run_main(main)
