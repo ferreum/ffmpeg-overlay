@@ -35,12 +35,17 @@ def main(argv):
     parser = argparse.ArgumentParser(prog=progname)
     parser.add_argument('-d', '--delay', default=None, help="Additional start delay in seconds")
     parser.add_argument('-s', '-ss', '--start', default=None, help="Start time in seconds (opposite of --delay)")
+    parser.add_argument('-S', '--absolute-start', default=None, help="Absolute start time (additional to -s)")
     endgroup = parser.add_mutually_exclusive_group()
     endgroup.add_argument('-to', '--until', default=None, help="End time in seconds after --delay")
     endgroup.add_argument('-t', '--duration', default=None, help="Duration in seconds after the actual start time")
     args = parser.parse_args(argv)
 
     args.start = convert_timearg(args.start, 0)
+    if args.absolute_start is not None:
+        args.absstart = int(args.absolute_start)
+    else:
+        args.absstart = 0
     args.delay = convert_timearg(args.delay, 0)
     args.until = convert_timearg(args.until, None)
     args.duration = convert_timearg(args.duration, None)
@@ -51,7 +56,7 @@ def main(argv):
     evs.ignored_line = print
 
     print("jsevents modified with js-cut.py")
-    evs.work_all(until=0)
+    evs.work_all(until=args.absstart)
     firsttime = evs.pending_event.time
     # ensure we processed all init events
     evs.work_all(until=firsttime)

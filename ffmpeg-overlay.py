@@ -21,10 +21,10 @@ class Context(object):
         self.states = allstates.states
         self.time = 0
 
-    def init_time(self, offset):
+    def init_time(self, offset, absstart=0):
         evs = self.evs
         # find the first event
-        evs.work_all(until=0)
+        evs.work_all(until=absstart)
         self.offset = evs.pending_event.time + offset
         # process all init events
         evs.work_all(until=evs.pending_event.time)
@@ -234,6 +234,8 @@ def parse_args(argv):
                         help="Additional delay for events in seconds (float)")
     parser.add_argument('-s', '-ss', '--start', default=None, dest='start',
                         help="Skip given amount of time of events, in seconds. For use with ffmpeg -ss option")
+    parser.add_argument('-S', '--absolute-start', default=None, dest='absolute_start',
+                        help="Absolute start time within events")
     parser.add_argument('-t', '--type', default='xboxdrv', help="Specify the controller type to use")
     parser.add_argument('-l', '--layout', default='distance', help="Name of the layout to use")
     parser.add_argument('-T', '--theme', default='default', help="Specify the theme to use")
@@ -250,6 +252,10 @@ def parse_args(argv):
 
     args.delay = convert_timearg(args.delay)
     args.start = convert_timearg(args.start)
+    if args.absolute_start is not None:
+        args.absstart = int(args.absolute_start)
+    else:
+        args.absstart = 0
 
     try:
         ctype = api.CONTROLLER_TYPES[args.type]()
@@ -295,7 +301,7 @@ def main(argv):
     surface, cctx = create_surface(layout, args.scale)
     with open(args.events, 'r') as source:
         context = Context(theme, source)
-        context.init_time(args.start - args.delay)
+        context.init_time(args.start - args.delay, absstart=args.absstart)
 
         anim = ControlsAnimation(context, layout.controls, fps=args.fps)
 
