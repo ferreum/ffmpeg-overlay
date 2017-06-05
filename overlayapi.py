@@ -397,5 +397,27 @@ def import_config_from_module(module):
         except TypeError:
             pass
 
+def import_config_from_file(path, modulename):
+    import os
+    import sys
+    if os.path.isdir(path):
+        abspath = os.path.realpath(path)
+        sys.path.insert(0, abspath)
+        old_dont_write_bytecode = sys.dont_write_bytecode
+        sys.dont_write_bytecode = True
+        try:
+            module = __import__(modulename)
+            import_config_from_module(module)
+        finally:
+            del sys.path[0]
+            sys.dont_write_bytecode = old_dont_write_bytecode
+
+def import_all_config():
+    import os
+    import defaults
+    import_config_from_module(defaults)
+    xdgdir = os.environ.get("XDG_CONFIG_DIR", os.path.expanduser("~/.config"))
+    import_config_from_file(xdgdir + "/ffmpeg-overlay", "config")
+
 
 # vim:set sw=4 ts=8 sts=4 et sr ft=python fdm=marker tw=0:

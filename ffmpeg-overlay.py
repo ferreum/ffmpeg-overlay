@@ -188,20 +188,6 @@ def convert_timearg(s):
         return 0
 
 
-def import_config(path):
-    if os.path.isdir(path):
-        abspath = os.path.realpath(path)
-        sys.path.insert(0, abspath)
-        old_dont_write_bytecode = sys.dont_write_bytecode
-        sys.dont_write_bytecode = True
-        try:
-            import config
-            api.import_config_from_module(config)
-        finally:
-            del sys.path[0]
-            sys.dont_write_bytecode = old_dont_write_bytecode
-
-
 def parse_args(argv):
     progname = argv.pop(0).rpartition('/')[2]
     try:
@@ -240,9 +226,7 @@ def parse_args(argv):
 
     args = parser.parse_args(argv)
 
-    import defaults
-    api.import_config_from_module(defaults)
-    import_config(os.environ.get("XDG_CONFIG_DIR", os.path.expanduser("~/.config")) + "/ffmpeg-overlay")
+    api.import_all_config()
 
     args.delay = convert_timearg(args.delay)
     args.start = convert_timearg(args.start)
