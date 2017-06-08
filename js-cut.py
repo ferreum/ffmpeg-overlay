@@ -56,10 +56,9 @@ def main(argv):
     evs.ignored_line = print
 
     print("jsevents modified with js-cut.py")
+    evs.work_all(until='initialized')
     evs.work_all(until=args.absstart)
-    firsttime = evs.pending_event.time
-    # ensure we processed all init events
-    evs.work_all(until=firsttime)
+    firsttime = evs.previous_event.time
     # read until we reach our start time
     starttime = firsttime + args.start - args.delay
     evs.work_all(until=starttime)

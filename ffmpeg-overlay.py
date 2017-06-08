@@ -24,11 +24,9 @@ class Context(object):
 
     def init_time(self, offset, absstart=0):
         evs = self.evs
-        # find the first event
+        evs.work_all(until='initialized')
         evs.work_all(until=absstart)
-        self.offset = evs.pending_event.time + offset
-        # process all init events
-        evs.work_all(until=evs.pending_event.time)
+        self.offset = evs.previous_event.time + offset
 
     def update(self, time):
         self.evs.work_all(self.offset + time)

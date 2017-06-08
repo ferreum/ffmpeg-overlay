@@ -68,6 +68,7 @@ class JsEvents(object):
         self.running = True
         self.exit_status = 0
         self.pending_event = None
+        self.previous_event = None
 
     def parse_jstest_event(self, line):
         if not re.match(r"\w+:", line):
@@ -107,9 +108,15 @@ class JsEvents(object):
             if event is None:
                 self.running = False
                 return False
-            if until is not None and event.time > until:
-                self.pending_event = event
-                return True
+            if until is not None:
+                if until == 'initialized':
+                    if (event.type & TY_INIT_BIT) == 0:
+                        self.pending_event = event
+                        return True
+                elif event.time > until:
+                    self.pending_event = event
+                    return True
+            self.previous_event = event
             self.handle_event(event)
             if not self.running:
                 return False
