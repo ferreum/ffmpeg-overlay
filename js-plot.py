@@ -150,32 +150,37 @@ def main(argv):
                          xlabel='time (seconds)', ylabel="value")
         if firstplot is None:
             firstplot = plot
-        plots[num] = plot
+        plots[num] = (plot, [0, 0])
 
-    def plotevents(events, plot, *args, **kw):
+    def plotevents(events, num, *args, **kw):
+        plot, ranges = plots[num]
         e = np.array(events)
         times = (e[:,0] - starttime) * .001
         values = e[:,1]
+        if any(values < 0):
+            ranges[0] = -1
+        if any(values > 0):
+            ranges[1] = 1
         plot.fill_between(times, values, 0,
                         where=abs(values)>.01, alpha=0.5, **kw)
 
     for name, adapter in zip(args.inputs, adapters):
-        plot = plots[PLOT_IDS.get(name, 1)]
+        num = PLOT_IDS.get(name, 1)
 
         events = plotter.recorded_events[adapter]
         color = COLORS.get(name, '#000000')
-        plotevents(events, plot, color=color, label=name)
+        plotevents(events, num, color=color, label=name)
 
     if plotter.lasttime is None:
         print("no events")
     else:
         end = plotter.lasttime - starttime
         end *= .001
-        for plot in plots.values():
-            plot.vlines([end], 0, 1, '#000000',
+        for plot, ranges in plots.values():
+            plot.vlines([end], ranges[0], ranges[1], '#000000',
                         label='end', linewidth=1, linestyle='-.')
 
-    for plot in plots.values():
+    for plot, ranges in plots.values():
         plot.legend()
 
     plt.show()
