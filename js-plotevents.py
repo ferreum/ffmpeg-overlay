@@ -89,7 +89,7 @@ def main(argv):
     parser.add_argument('-d', '--delay', default=None, help="Additional start delay in seconds")
     parser.add_argument('-s', '-ss', '--start', default=None, help="Start time in seconds (opposite of --delay)")
     parser.add_argument('-S', '--absolute-start', default=None, help="Absolute start time (additional to -s)")
-    parser.add_argument('-T', '--type', default='xboxdrv', help="Specify the controller type to use")
+    parser.add_argument('-T', '--type', default='auto', help="Specify the controller type to use")
     parser.add_argument('-i', '--inputs', nargs='*',
                         default=['STL_X', 'STL_Y', 'STR_X', 'STR_Y', 'LT', 'RT', 'LB', 'RB', 'BACK', 'START', 'GUIDE', 'A', 'B', 'X', 'Y'],
                         help="Specify controller inputs to plot")
@@ -119,9 +119,9 @@ def main(argv):
 
     evs = js.HandlerJsEvents(sys.stdin)
 
+    ctype.attach_events(evs)
     allstates = js.AllstatesHandler(evs)
     allstates.attach()
-    plotter = PlotHandler(evs, allstates, adapters)
 
     evs.work_all(until='initialized')
     evs.work_all(until=args.absstart)
@@ -130,6 +130,7 @@ def main(argv):
     starttime = firsttime + args.start - args.delay
     evs.work_all(until=starttime)
 
+    plotter = PlotHandler(evs, allstates, adapters)
     plotter.initevents(starttime)
     plotter.attach()
     evs.work_all()

@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
+import sys
 import math
 import cairocffi as cairo
+import js
 
 
 def snap_rect(cctx, x, y, w, h):
@@ -385,10 +387,65 @@ class ControllerType(object):
         else:
             raise AttributeError
 
+    def attach_events(self, events):
+        pass
+
+    @staticmethod
+    def match_name(line):
+        return False
+
+
+class AutoDetectControllerType(ControllerType, js.Handler):
+
+    ctype = None
+
+    def __init__(self):
+        self.adapters = []
+        # do not initialze js.Handler here
+
+    def attach_events(self, events):
+        self.events = events
+        self.attach()
+
+    def handle_unknown(self, line):
+        global CONTROLLER_TYPES
+        if line.startswith("Joystick "):
+            for name, cls in CONTROLLER_TYPES.items():
+                if cls.match_name(line):
+                    print(f"detected ctype {name}")
+                    self.remove()
+                    self.init_ctype(cls())
+                    return
+            print(f"No ctype found for {line}", out=sys.stderr)
+
+    def init_ctype(self, ctype):
+        self.ctype = ctype
+        for adapter in self.adapters:
+            adapter.init(ctype)
+        self.adapters = None
+
+    def __getattr__(self, name):
+        source = None
+        def adapter(states):
+            return source(states)
+        def init(ctype):
+            nonlocal source
+            source = to_adapter(getattr(ctype, name))
+            adapter.origin = source.origin
+        ctype = self.ctype
+        if ctype is None:
+            adapter.init = init
+            self.adapters.append(adapter)
+        else:
+            init(ctype)
+        return adapter
+
 
 CONTROLLER_TYPES = {}
 LAYOUTS = {}
 THEMES = {}
+
+CONTROLLER_TYPES['auto'] = AutoDetectControllerType
 
 def import_config_from_module(module):
     for v in vars(module).values():

@@ -4,6 +4,7 @@
 
 import sys
 import re
+import contextlib
 
 
 TY_BUTTON = 1
@@ -145,6 +146,9 @@ class Handler(object):
     def handle_event(self, event):
         pass
 
+    def handle_unknown(self, line):
+        pass
+
 
 class HandlerJsEvents(JsEvents):
 
@@ -179,10 +183,10 @@ class HandlerJsEvents(JsEvents):
         else:
             self.handlers.remove(handler)
 
-    def handle_event(self, event):
+    @contextlib.contextmanager
+    def _handling(self):
         self.handling = True
-        for h in self.handlers:
-            h.handle_event(event)
+        yield
         for h in self.removed:
             self.handlers.remove(h)
         for h in self.added:
@@ -190,6 +194,17 @@ class HandlerJsEvents(JsEvents):
         self.added.clear()
         self.removed.clear()
         self.handling = False
+
+
+    def handle_event(self, event):
+        with self._handling():
+            for h in self.handlers:
+                h.handle_event(event)
+
+    def ignored_line(self, line):
+        with self._handling():
+            for h in self.handlers:
+                h.handle_unknown(line)
 
 
 class AllstatesHandler(Handler):

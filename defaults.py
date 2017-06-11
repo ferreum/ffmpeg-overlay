@@ -33,6 +33,10 @@ class CTypeXpad(ControllerType):
     START = (1, 7)
     GUIDE = (1, 8)
 
+    @staticmethod
+    def match_name(line):
+        return "X-Box One pad" in line
+
 
 class CTypeXboxdrv(ControllerType):
     name = 'xboxdrv'
@@ -56,6 +60,10 @@ class CTypeXboxdrv(ControllerType):
     BACK = (1, 6)
     START = (1, 7)
     GUIDE = (1, 8)
+
+    @staticmethod
+    def match_name(line):
+        return "Xbox Gamepad (userspace driver)" in line
 
 
 class DistanceLayout(Layout):

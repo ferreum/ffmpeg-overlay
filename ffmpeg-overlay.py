@@ -10,10 +10,11 @@ from common import ArgvError
 
 class Context(object):
 
-    def __init__(self, theme, stream):
+    def __init__(self, theme, ctype, stream):
         import js
         self.stream = stream
         evs = js.HandlerJsEvents(stream)
+        ctype.attach_events(evs)
         allstates = js.AllstatesHandler(evs)
         allstates.attach()
         self.theme = theme
@@ -214,7 +215,7 @@ def parse_args(argv):
                         help="Skip given amount of time of events, in seconds. For use with ffmpeg -ss option")
     parser.add_argument('-S', '--absolute-start', default=None, dest='absolute_start',
                         help="Absolute start time within events")
-    parser.add_argument('-t', '--type', default='xboxdrv', help="Specify the controller type to use")
+    parser.add_argument('-t', '--type', default='auto', help="Specify the controller type to use")
     parser.add_argument('-l', '--layout', default='distance', help="Name of the layout to use")
     parser.add_argument('-T', '--theme', default='default', help="Specify the theme to use")
     parser.add_argument('--scale', type=float, default=1.0, help="Scale the overlay by the given value")
@@ -257,9 +258,7 @@ def parse_args(argv):
         templateargs = [str(args.start / 1000) if s == "{ss}" else s for s in templateargs]
         args.templateargs = templateargs
 
-    layout = layoutcls(ctype)
-
-    return layout, theme, args
+    return layoutcls, ctype, theme, args
 
 
 def create_surface(layout, scale):
@@ -273,10 +272,12 @@ def create_surface(layout, scale):
 
 
 def main(argv):
-    layout, theme, args = parse_args(argv)
+    layoutcls, ctype, theme, args = parse_args(argv)
+    layout = layoutcls(ctype)
+
     surface, cctx = create_surface(layout, args.scale)
     with open(args.events, 'r') as source:
-        context = Context(theme, source)
+        context = Context(theme, ctype, source)
         context.init_time(args.start - args.delay, absstart=args.absstart)
 
         anim = ControlsAnimation(context, layout.controls, fps=args.fps)
