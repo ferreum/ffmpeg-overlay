@@ -1,6 +1,6 @@
 #!/usr/bin/python
-# File:        plotevents.py
-# Description: plotevents
+# File:        js-plot.py
+# Description: plot joystick event recordings
 # Created:     2017-06-05
 
 import js
@@ -173,7 +173,7 @@ def main(argv):
         end *= .001
         for plot in plots.values():
             plot.vlines([end], 0, 1, '#000000',
-                      label='end', linewidth=1, linestyle='-.')
+                        label='end', linewidth=1, linestyle='-.')
 
     for plot in plots.values():
         plot.legend()
