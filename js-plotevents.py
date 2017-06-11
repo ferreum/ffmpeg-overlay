@@ -157,7 +157,7 @@ def main(argv):
         times = (e[:,0] - starttime) * .001
         values = e[:,1]
         plot.fill_between(times, values, 0,
-                        where=values>.01, alpha=0.5, **kw)
+                        where=abs(values)>.01, alpha=0.5, **kw)
 
     for name, adapter in zip(args.inputs, adapters):
         plot = plots[PLOT_IDS.get(name, 1)]
