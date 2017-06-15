@@ -301,7 +301,7 @@ class GroupAdapter(object):
 
     def __init__(self, *adapters):
         self.adapters = [to_adapter(a) for a in adapters]
-        self.origin = tuple(a.origin for a in self.adapters)
+        self.origin = tuple(o for a in self.adapters for o in a.origin)
 
     def __call__(self, context):
         return [a(context) for a in self.adapters]
