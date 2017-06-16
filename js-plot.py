@@ -18,6 +18,7 @@ class PlotHandler(js.Handler):
         self.allstates = allstates
         self.origin_to_adapters = origin_to_adapters = {}
         self.recorded_events = ev = {}
+        self.directional = set()
         for adapter in adapters:
             ev[adapter] = []
             for o in adapter.origin:
@@ -29,7 +30,10 @@ class PlotHandler(js.Handler):
 
     def initevents(self, time):
         for adapter, events in self.recorded_events.items():
-            events.append((time, adapter(self.allstates)))
+            value = adapter(self.allstates)
+            if isinstance(value, (tuple, list)):
+                self.directional.add(adapter)
+            events.append((time, value))
 
     def handle_event(self, event):
         type = event.type & ~js.TY_INIT_BIT
@@ -42,8 +46,72 @@ class PlotHandler(js.Handler):
             if events:
                 prevevent = events[-1]
                 if prevevent[0] < time - 10:
-                    events.append((time - 10, prevevent[1]))
-            events.append((time, adapter(self.allstates)))
+                    events.append((time - 10, *prevevent[1:]))
+            value = adapter(self.allstates)
+            events.append((time, value))
+
+
+def calculate_directions(events):
+    import numpy as np
+    array = np.empty((len(events), 3), dtype=np.float64)
+    for i, (time, values) in enumerate(events):
+        array[i, 0] = time
+        array[i, 1:] = values[0], values[1]
+    times = array[:, 0]
+    magnitudes = np.hypot(array[:, 1], array[:, 2])
+    directions = np.arctan2(array[:, 2], array[:, 1])
+    return times, magnitudes, directions
+
+
+def calculate_major_directions(times, magnitudes, directions):
+    import numpy as np
+    result = []
+    curstart = None
+    dirmin = 0
+    dirmax = 0
+    maxmag = 0
+    dir_threshold = np.pi * .3
+    def endit():
+        nonlocal curstart
+        if curstart is not None:
+            result.append(((curstart + time) * .5,
+                           (dirmin + dirmax) * .5,
+                           maxmag))
+            curstart = None
+    def startit():
+        nonlocal curstart, dirmin, dirmax, maxmag
+        curstart = time
+        dirmin = dir
+        dirmax = dir
+        maxmag = mag
+    for time, mag, dir in zip(times, magnitudes, directions):
+        if mag < .05:
+            endit()
+            continue
+        if curstart is None:
+            startit()
+            continue
+        d = dir
+        if d < dirmax - np.pi:
+            d += np.pi * 2
+        elif d > dirmin + np.pi:
+            d += np.pi * 2
+        if d > dirmax:
+            if d - dirmin > dir_threshold:
+                endit()
+                startit()
+                continue
+            dirmax = d
+        elif d < dirmin:
+            if dirmax - d > dir_threshold:
+                endit()
+                startit()
+                continue
+            dirmin = d
+        if mag > maxmag:
+            maxmag = mag
+    endit()
+    return result
 
 
 COLORS = {
@@ -58,19 +126,23 @@ COLORS = {
     'LB': '#3030ff',
     'RT': '#ff3030',
     'LT': '#ff880a',
+    'STL': '#5b5b99',
     'STL_X': '#5b5b99',
     'STL_Y': '#5b5b99',
+    'STR': '#995b5b',
     'STR_X': '#995b5b',
     'STR_Y': '#995b5b',
 }
 
 PLOT_IDS = {
-    'RB': 3,
-    'LB': 3,
+    'STL': 2,
     'STL_X': 2,
     'STL_Y': 2,
+    'STR': 2,
     'STR_X': 2,
     'STR_Y': 2,
+    'RB': 3,
+    'LB': 3,
     'RT': 3,
     'LT': 3,
 }
@@ -152,24 +224,33 @@ def main(argv):
             firstplot = plot
         plots[num] = (plot, [0, 0])
 
-    def plotevents(events, num, *args, **kw):
-        plot, ranges = plots[num]
-        e = np.array(events)
-        times = (e[:,0] - starttime) * .001
-        values = e[:,1]
-        if any(values < 0):
-            ranges[0] = -1
-        if any(values > 0):
-            ranges[1] = 1
-        plot.fill_between(times, values, 0,
-                        where=abs(values)>.01, alpha=0.5, **kw)
-
     for name, adapter in zip(args.inputs, adapters):
         num = PLOT_IDS.get(name, 1)
 
         events = plotter.recorded_events[adapter]
+        if adapter in plotter.directional:
+            times, values, directions = calculate_directions(events)
+            major_directions = calculate_major_directions(
+                (times - starttime) * .001, values, directions)
+        else:
+            directions = ()
+            events = np.array(events)
+            times = events[:,0]
+            values = events[:,1]
+        times = (times - starttime) * .001
         color = COLORS.get(name, '#000000')
-        plotevents(events, num, color=color, label=name)
+        plot, ranges = plots[num]
+        if any(values < 0):
+            ranges[0] = -1
+        if any(values > 0):
+            ranges[1] = 1
+        if len(directions):
+            for time, angle, maxmag in major_directions:
+                plot.text(time, maxmag + .1, "→", ha='center', va='center',
+                          color=color, rotation=(- angle * 180 / np.pi))
+        plot.fill_between(times, values, 0,
+                          where=abs(values)>.01, alpha=0.5,
+                          color=color, label=name)
 
     if plotter.lasttime is None:
         print("no events")
