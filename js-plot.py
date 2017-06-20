@@ -43,12 +43,10 @@ class PlotHandler(js.Handler):
         self.lasttime = time
         for adapter in self.origin_to_adapters.get(spec, ()):
             events = self.recorded_events[adapter]
-            if events:
-                prevevent = events[-1]
-                if prevevent[0] < time - 10:
-                    events.append((time - 10, *prevevent[1:]))
-            value = adapter(self.allstates)
-            events.append((time, value))
+            prevevent = events[-1]
+            if prevevent[0] < time - 10:
+                events.append((time - 10, *prevevent[1:]))
+            events.append((time, adapter(self.allstates)))
 
 
 def calculate_directions(events):
