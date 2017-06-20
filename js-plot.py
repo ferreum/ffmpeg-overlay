@@ -200,10 +200,16 @@ def main(argv):
     starttime = firsttime + args.start - args.delay
     evs.work_all(until=starttime)
 
+    endtime = None
+    if args.until is not None:
+        endtime = firsttime + args.until - args.delay
+    elif args.duration is not None:
+        endtime = firsttime + args.duration + args.start - args.delay
+
     plotter = PlotHandler(evs, allstates, adapters)
     plotter.initevents(starttime)
     plotter.attach()
-    evs.work_all()
+    evs.work_all(until=endtime)
 
     import matplotlib.pyplot as plt
     import numpy as np
