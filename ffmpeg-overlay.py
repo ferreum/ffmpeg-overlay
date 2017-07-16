@@ -5,67 +5,9 @@ import sys
 import os
 import contextlib
 import overlayapi as api
+import js
+from overlayapi import Context, ControlsAnimation
 from common import ArgvError
-
-
-class Context(object):
-
-    def __init__(self, theme, ctype, stream):
-        import js
-        self.stream = stream
-        evs = js.HandlerJsEvents(stream)
-        ctype.attach_events(evs)
-        allstates = js.AllstatesHandler(evs)
-        allstates.attach()
-        self.theme = theme
-        self.evs = evs
-        self.allstates = allstates
-        self.states = allstates.states
-        self.time = 0
-
-    def init_time(self, offset, absstart=0):
-        evs = self.evs
-        evs.work_all(until='initialized')
-        evs.work_all(until=absstart)
-        self.offset = evs.previous_event.time + offset
-
-    def update(self, time):
-        self.evs.work_all(self.offset + time)
-        self.time = time
-
-
-class ControlsAnimation(object):
-
-    def __init__(self, context, controls, fps=60):
-        self.context = context
-        self.controls = controls
-        self.fps = fps
-
-    def init(self, cctx):
-        elems = []
-        for c in self.controls:
-            elems.extend(c.init_theme(self.context.theme))
-
-    def update(self, i):
-        context = self.context
-        time = i * 1000 // self.fps
-        context.update(time=time)
-        for c in self.controls:
-            c.update(context)
-
-    def draw(self, cctx):
-        for c in self.controls:
-            c.draw(cctx)
-
-    def save(self, writer):
-        with writer.saving():
-            for c in self.controls:
-                c.init_theme(self.context.theme)
-            import itertools
-            for i in itertools.count():
-                self.update(i)
-                self.draw(writer.cctx)
-                writer.save_frame()
 
 
 class FFMpegWriter(object):
@@ -277,7 +219,7 @@ def main(argv):
 
     surface, cctx = create_surface(layout, args.scale)
     with open(args.events, 'r') as source:
-        context = Context(theme, ctype, source)
+        context = Context(theme, ctype, js.HandlerJsEvents(source))
         context.init_time(args.start - args.delay, absstart=args.absstart)
 
         anim = ControlsAnimation(context, layout.controls, fps=args.fps)

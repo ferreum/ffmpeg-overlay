@@ -64,7 +64,7 @@ class LineConvertingReader(object):
 
 class JsEvents(object):
 
-    def __init__(self, stream):
+    def __init__(self, stream=None):
         self.stream = stream
         self.running = True
         self.exit_status = 0
@@ -90,6 +90,15 @@ class JsEvents(object):
             if event is not None:
                 return event
             self.ignored_line(line)
+
+    def feed(self, line):
+        line = line.rstrip('\n')
+        event = self.parse_jstest_event(line)
+        if event is None:
+            self.ignored_line(line)
+        else:
+            self.handle_event(event)
+        return event
 
     def work(self):
         event = self._next_event()
@@ -152,7 +161,7 @@ class Handler(object):
 
 class HandlerJsEvents(JsEvents):
 
-    def __init__(self, stream):
+    def __init__(self, stream=None):
         JsEvents.__init__(self, stream)
         self.handling = False
         self.handlers = []

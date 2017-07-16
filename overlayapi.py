@@ -2,7 +2,6 @@
 
 import sys
 import math
-import cairocffi as cairo
 import js
 
 
@@ -59,6 +58,7 @@ class Look(object):
                 alpha = 1.0
             elif self.last_active + hidetime > context.time:
                 alpha = 1.0 - (context.time - self.last_active) / hidetime
+                context.post_update()
             else:
                 alpha = 0.0
             self.alpha = alpha
@@ -71,7 +71,7 @@ class Look(object):
     def on_draw(self, cctx):
         label = self.label
         if label is not None:
-            cctx.select_font_face(weight=cairo.FONT_WEIGHT_BOLD)
+            cctx.select_font_face("bold")
             cctx.set_source_rgba(*self.textcolor, self.alpha)
             cctx.set_font_size(self.labelargs['size'])
             cx, cy = self.center
@@ -216,7 +216,8 @@ class DpadButtonLook(BgFgLook):
         fg = shape_bounds(size * self.fgsize)
         _, ar, ah = shape_bounds(size * self.bgsize * .8)
 
-        with cctx:
+        cctx.save()
+        try:
             cctx.rotate(self.angle)
             cctx.set_source_rgba(*self.bgcolor, self.bgalpha * self.alpha)
             draw_shape(*bg)
@@ -230,6 +231,8 @@ class DpadButtonLook(BgFgLook):
             cctx.line_to(ar - ah, ah)
             cctx.line_to(ar - ah, -ah)
             cctx.fill()
+        finally:
+            cctx.restore()
         BgFgLook.on_draw(self, cctx)
 
 class DpadGroupLook(Look):
@@ -271,10 +274,13 @@ class DpadGroupLook(Look):
             b.alpha = self.alpha
 
     def on_draw(self, cctx):
-        with cctx:
+        cctx.save()
+        try:
             cctx.translate(*snap_point(cctx, *self.center))
             for btn in self.buttons:
                 btn.draw(cctx)
+        finally:
+            cctx.restore()
         Look.on_draw(self, cctx)
 
 
@@ -439,6 +445,78 @@ class AutoDetectControllerType(ControllerType, js.Handler):
         else:
             init(ctype)
         return adapter
+
+
+class Context(object):
+
+    needs_update = False
+
+    def __init__(self, theme, ctype, evs):
+        import js
+        ctype.attach_events(evs)
+        allstates = js.AllstatesHandler(evs)
+        allstates.attach()
+        self.theme = theme
+        self.evs = evs
+        self.allstates = allstates
+        self.states = allstates.states
+        self.time = 0
+
+    def init_time(self, offset, absstart=0):
+        evs = self.evs
+        evs.work_all(until='initialized')
+        evs.work_all(until=absstart)
+        self.offset = evs.previous_event.time + offset
+
+    def update(self, time):
+        self.evs.work_all(self.offset + time)
+        self.time = time
+
+    def post_update(self):
+        self.needs_update = True
+
+
+class ControlsAnimation(object):
+
+    def __init__(self, context, controls, fps=60):
+        self.context = context
+        self.controls = controls
+        self.fps = fps
+
+    def init(self, cctx=None):
+        for c in self.controls:
+            c.init_theme(self.context.theme)
+
+    def update(self, i):
+        context = self.context
+        time = i * 1000 // self.fps
+        context.update(time=time)
+        for c in self.controls:
+            c.update(context)
+
+    def draw(self, cctx):
+        for c in self.controls:
+            c.draw(cctx)
+
+    def save(self, writer):
+        with writer.saving():
+            for c in self.controls:
+                c.init_theme(self.context.theme)
+            import itertools
+            for i in itertools.count():
+                self.update(i)
+                self.draw(writer.cctx)
+                writer.save_frame()
+
+
+class LiveControlsAnimation(ControlsAnimation):
+
+    def update(self, i=0):
+        import time
+        context = self.context
+        context.time = time.time() * 1000
+        for c in self.controls:
+            c.update(context)
 
 
 CONTROLLER_TYPES = {}
