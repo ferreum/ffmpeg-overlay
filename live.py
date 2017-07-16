@@ -65,14 +65,15 @@ class LiveWorker(object):
         process = await asyncio.create_subprocess_exec(
             "stdbuf", "-o0", "jstest", "--event", self.device_path,
             stdin=asyncio.subprocess.DEVNULL,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT)
+            stdout=asyncio.subprocess.PIPE)
         try:
             event = None
             num_init_events = None
             evnum = 0
             while event is None or (event.type & js.TY_INIT_BIT) != 0:
                 line = await process.stdout.readline()
+                if not line:
+                    return
                 line = line.decode('utf-8')
                 match = re.search(r"has (\d+) axes and (\d+) buttons\.", line)
                 if match:
@@ -85,11 +86,14 @@ class LiveWorker(object):
             self.on_init()
             while True:
                 line = await process.stdout.readline()
+                if not line:
+                    return
                 evs.feed(line.decode('utf-8'))
                 self.on_event()
                 evnum += 1
         finally:
-            process.terminate()
+            if process.returncode is None:
+                process.terminate()
 
     def on_init(self):
         pass
