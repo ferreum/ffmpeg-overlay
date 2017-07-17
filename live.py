@@ -71,10 +71,8 @@ class LiveWorker(object):
             event = None
             num_init_events = None
             evnum = 0
-            while event is None or (event.type & js.TY_INIT_BIT) != 0:
-                line = await process.stdout.readline()
-                if not line:
-                    return
+            lines = process.stdout.__aiter__()
+            async for line in lines:
                 line = line.decode('utf-8')
                 match = re.search(r"has (\d+) axes and (\d+) buttons\.", line)
                 if match:
@@ -84,11 +82,10 @@ class LiveWorker(object):
                     evnum += 1
                 if num_init_events and evnum >= num_init_events:
                     break
+                if event is not None and (event.type & js.TY_INIT_BIT) == 0:
+                    break
             self.on_init()
-            while True:
-                line = await process.stdout.readline()
-                if not line:
-                    return
+            async for line in lines:
                 evs.feed(line.decode('utf-8'))
                 self.on_event()
                 evnum += 1
