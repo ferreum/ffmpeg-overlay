@@ -5,6 +5,7 @@
 
 
 import re
+from contextlib import suppress
 import asyncio
 from gi.repository import Gtk
 import cairo
@@ -92,7 +93,7 @@ class LiveWorker(object):
                 self.on_event()
                 evnum += 1
         finally:
-            if process.returncode is None:
+            with suppress(ProcessLookupError):
                 process.terminate()
 
     def on_init(self):
