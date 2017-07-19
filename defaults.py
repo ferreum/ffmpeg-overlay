@@ -35,7 +35,7 @@ class CTypeXpad(ControllerType):
 
     @staticmethod
     def match_name(line):
-        return "X-Box One pad" in line
+        return "X-Box One pad" in line or "X-Box 360 pad" in line
 
 
 class CTypeXboxdrv(ControllerType):
