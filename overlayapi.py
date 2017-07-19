@@ -422,7 +422,7 @@ class AutoDetectControllerType(ControllerType, js.Handler):
                     self.remove()
                     self.init_ctype(cls())
                     return
-            print(f"No ctype found for {line}", out=sys.stderr)
+            print(f"No ctype found for {line}", file=sys.stderr)
 
     def init_ctype(self, ctype):
         self.ctype = ctype
